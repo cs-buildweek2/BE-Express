@@ -5,6 +5,10 @@
   "repository": "https://github.com/cs-buildweek2/BE-Express.git",
   "author": "VictorGoic0 <vgoico000@citymail.cuny.edu>",
   "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "server": "nodemon index.js"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
@@ -13,5 +17,8 @@
     "knex": "^0.19.1",
     "pg": "^7.12.0",
     "sqlite3": "^4.0.9"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1"
   }
 }
