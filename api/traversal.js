@@ -146,6 +146,9 @@ const traversal = async token => {
               if (allNeighborsVisited) {
                 backtracking = true;
               }
+              else {
+                s.push(newRoomID)
+              }
             }
             currentRoom = newRoomID;
             break;
