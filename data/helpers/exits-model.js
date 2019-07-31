@@ -3,6 +3,7 @@ const db = require("../dbConfig.js");
 module.exports = {
   find,
   findById,
+  findByRoom,
   create,
   remove,
   update
@@ -15,6 +16,13 @@ async function find(id) {
 async function findById(id) {
   const exit = await db("exits")
     .where({ "exits.id": id })
+    .first();
+  return exit;
+}
+
+async function findByRoom(id, direction) {
+  const exit = await db("exits")
+    .where({ "exits.room_id": id, "exits.direction": direction })
     .first();
   return exit;
 }
