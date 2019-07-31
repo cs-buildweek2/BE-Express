@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const traversal = require("./traversal");
 
 const server = express();
 
@@ -13,7 +14,13 @@ server.get("/", (req, res) => {
 });
 
 server.post("/traverse", (req, res) => {
-  res.send("Traversal will go here");
+  const { token } = req.body.token;
+  if (!token) {
+    res.status(401).json({ message: "Bad request. No token sent." });
+  } else {
+    traversal(token);
+    res.status(200).json({ message: "Traversal running." });
+  }
 });
 
 module.exports = server;
