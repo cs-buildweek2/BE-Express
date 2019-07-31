@@ -49,6 +49,26 @@ const graphToDatabase = graph => {
   }
 };
 
+const checkDirections = (graph, currentRoom, nextRoom) => {
+  const opposites = {
+    'n': 's',
+    's': 'n',
+    'w': 'e',
+    'e': 'w'
+  }
+  for (let exit in graph[currentRoom]) {
+    if (graph[currentRoom][exit] === nextRoom) {
+      const opposite = opposites[exit]
+      if (opposite in graph[nextRoom]) {
+        graph[nextRoom][opposite] = currentRoom
+        return true;
+      } else {
+        return false
+      }
+    }
+  }
+}
+
 const roomRequest = async (token, direction) => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
   const headers = {
@@ -134,6 +154,8 @@ const traversal = async token => {
               for (let exit of movedToRoom.exits) {
                 graph[newRoomID][exit] = "?";
               }
+              checkDirections(graph, currentRoom, newRoomID)
+              // Check if you can travel to the room you just came from. If you can, set that direction in the graph
             }
             else {
               // This has been visited already. Check for unexplored rooms. If none exist, start backtracking
