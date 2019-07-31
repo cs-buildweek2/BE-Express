@@ -24,11 +24,13 @@ const inner_bfs = (graph, starting_vertex, destination) => {
     const path = q.dequeue();
     const node = path[path.length - 1];
     for (let direction in graph[node]) {
-      if (graph[node][direction] === destination) {
+      let room = graph[node][direction];
+      if (room === destination) {
+        path.push(room);
         return path;
       } else {
         const new_path = path.concat();
-        new_path.push(graph[node][direction]);
+        new_path.push(room);
         q.enqueue(new_path);
       }
     }
@@ -42,6 +44,17 @@ const roomRequest = async (token, direction) => {
     "Content-Type": "application/json"
   };
   const request = { direction };
+  const response = await axios.post(URL, request, headers);
+  return response;
+};
+
+const shorterRoomRequest = async (token, direction, nextRoom) => {
+  const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
+  const headers = {
+    Authorization: `Token ${token}`,
+    "Content-Type": "application/json"
+  };
+  const request = { direction, next_room_id: nextRoom.toString() };
   const response = await axios.post(URL, request, headers);
   return response;
 };
@@ -86,6 +99,7 @@ const traversal = async token => {
             explored = false;
             const movedToRoom = roomRequest(token, direction);
             const newRoomID = movedToRoom.room_id;
+            graph[currentRoom][direction] = newRoomID;
             // Reset cooldown and starting time after making a move
             cooldown = movedToRoom.cooldown;
             startingTime = new Date().getTime() / 1000;
@@ -115,6 +129,36 @@ const traversal = async token => {
         } else {
           // Else take a step towards the lastRoom. Check graph for available paths
           const path = inner_bfs(graph, currentRoom, lastUnExploredRoom);
+          const convertedPath = [];
+          let counter = convertedPath.length;
+          let increment = 0;
+          for (let i = 1; i < path.length; i++) {
+            let previousRoom = path[i - 1];
+            let room = path[i];
+            for (let direction in graph[previousRoom]) {
+              if (graph[previousRoom][direction] === room) {
+                convertedPath.push(direction);
+              }
+            }
+          }
+          // Backtrack path is complete, traverse it
+          while (counter > 0) {
+            currentTime = new Date().getTime() / 1000;
+            if (currentTime - startingTime >= cooldown) {
+              // traverse, use the room_to method for shorter cooldown
+              let nextRoom = await shorterRoomRequest(
+                token,
+                convertedPath[increment],
+                path[increment + 1]
+              );
+              currentRoom = nextRoom.room_id;
+              cooldown = nextRoom.cooldown;
+              startingTime = new Date().getTime() / 1000;
+              increment += 1;
+              counter -= 1;
+            }
+          }
+          backtracking = false;
         }
       }
     }
