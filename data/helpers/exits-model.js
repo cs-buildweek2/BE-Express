@@ -9,44 +9,44 @@ module.exports = {
 };
 
 async function find(id) {
-  return db("rooms");
+  return db("exits");
 }
 
 async function findById(id) {
-  const room = await db("rooms")
-    .where({ "rooms.id": id })
+  const exit = await db("exits")
+    .where({ "exits.id": id })
     .first();
-  return room;
+  return exit;
 }
 
 async function create(item) {
-  const [id] = await db("rooms")
+  const [id] = await db("exits")
     .insert(item)
     .returning("id");
   if (id) {
-    const room = await findById(id);
-    return room;
+    const exit = await findById(id);
+    return exit;
   }
 }
 
 async function remove(id) {
-  const room = await findById(id);
-  if (room) {
-    const deleted = await db("rooms")
+  const exit = await findById(id);
+  if (exit) {
+    const deleted = await db("exits")
       .where({ id })
       .del();
     if (deleted) {
-      return room;
+      return exit;
     }
   }
 }
 
 async function update(item, id) {
-  const editedRoom = await db("rooms")
+  const editedExit = await db("exits")
     .where({ id })
     .update(item);
-  if (editedRoom) {
-    const room = await findById(id);
-    return room;
+  if (editedExit) {
+    const exit = await findById(id);
+    return exit;
   }
 }
