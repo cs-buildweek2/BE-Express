@@ -16,14 +16,14 @@ const roomRequest = async (token, direction) => {
 const initialization = async token => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/init/";
   const headers = {
-    Authorization: `Token ${secret}`,
+    Authorization: `Token ${token}`,
     "Content-Type": "application/json"
   };
   const response = await axios.get(URL, headers);
   return response;
 };
 
-const traversal = token => {
+const traversal = async token => {
   const graph = {};
   const startingRoom = initialization(token);
   const newRoom = {
@@ -34,22 +34,23 @@ const traversal = token => {
   graph[startingRoom] = {};
   await Rooms.create(newRoom);
   if (startingRoom.exits.length > 0) {
-      for (exit of exits) {
-          const newExit = {
-              room_id: startingRoom.id,
-              direction: exit
-          }
-          await Exits.create(newExit)
-          graph[startingRoom][exit] = "?"
-      }
+    for (exit of exits) {
+      const newExit = {
+        room_id: startingRoom.id,
+        direction: exit
+      };
+      await Exits.create(newExit);
+      graph[startingRoom][exit] = "?";
+    }
   }
   const totalRooms = 500;
   const visited = new Set();
   const s = [];
   // will hold rooms here that have unexplored neighbors, for the purpose of backtracking
-  visited.add(startingRoom.room_id)
+  visited.add(startingRoom.room_id);
   while (visited.size < totalRooms) {
-      return
+    return;
+    // Traverse until you hit a dead-end, then back-track to the nearest room with an unexplored path.
   }
 };
 
