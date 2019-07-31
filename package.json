@@ -1,0 +1,17 @@
+{
+  "name": "BE-Express",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/cs-buildweek2/BE-Express.git",
+  "author": "VictorGoic0 <vgoico000@citymail.cuny.edu>",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "helmet": "^3.20.0",
+    "knex": "^0.19.1",
+    "pg": "^7.12.0",
+    "sqlite3": "^4.0.9"
+  }
+}
