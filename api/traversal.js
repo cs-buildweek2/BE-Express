@@ -1,6 +1,39 @@
 const axios = require("axios");
-const Rooms = require("../data/helpers/rooms-model.js");
-const Exits = require("../data/helpers/exits-model.js");
+// const Rooms = require("../data/helpers/rooms-model.js");
+// const Exits = require("../data/helpers/exits-model.js");
+
+class Queue {
+  constructor() {
+    this.storage = [];
+  }
+  enqueue(value) {
+    this.storage.push(value);
+  }
+  dequeue() {
+    return this.storage.pop();
+  }
+  size() {
+    return this.storage.length;
+  }
+}
+
+const inner_bfs = (graph, starting_vertex, destination) => {
+  const q = Queue();
+  q.enqueue([starting_vertex]);
+  while (q.size() > 0) {
+    const path = q.dequeue();
+    const node = path[path.length - 1];
+    for (let direction in graph[node]) {
+      if (graph[node][direction] === destination) {
+        return path;
+      } else {
+        const new_path = path.concat();
+        new_path.push(graph[node][direction]);
+        q.enqueue(new_path);
+      }
+    }
+  }
+};
 
 const roomRequest = async (token, direction) => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
@@ -75,7 +108,14 @@ const traversal = async token => {
           backtracking = true;
         }
       } else {
-        // Backtracking goes here
+        // Don't pop until we traverse there
+        const lastUnExploredRoom = s[s.length - 1];
+        if (currentRoom === lastUnExploredRoom) {
+          backtracking = false;
+        } else {
+          // Else take a step towards the lastRoom. Check graph for available paths
+          const path = inner_bfs(graph, currentRoom, lastUnExploredRoom);
+        }
       }
     }
   }
