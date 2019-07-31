@@ -26,8 +26,5 @@ exports.up = function(knex, Promise) {
 };
 
 exports.down = function(knex, Promise) {
-  return knex.schema
-    .dropTableIfExists("exits")
-    .dropTableIfExists("rooms")
-    .dropTableIfExists("users");
+  return knex.schema.dropTableIfExists("exits").dropTableIfExists("rooms");
 };
