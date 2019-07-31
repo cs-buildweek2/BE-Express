@@ -37,6 +37,18 @@ const inner_bfs = (graph, starting_vertex, destination) => {
   }
 };
 
+const graphToDatabase = graph => {
+  for (let room in graph) {
+    for (let direction in graph[room]) {
+      let direction_id = graph[room][direction];
+      const newExit = {
+        direction_id, direction, room_id: room
+      }
+      await Exits.create(newExit)
+    }
+  }
+};
+
 const roomRequest = async (token, direction) => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
   const headers = {
@@ -73,7 +85,12 @@ const traversal = async token => {
   const graph = {};
   const startingRoom = initialization(token);
   graph[startingRoom.room_id] = {};
-  // await Rooms.create(newRoom);
+  const newRoom = {
+    room_id: startingRoom.room_id,
+    title: startingRoom.title,
+    description: startingRoom.description
+  };
+  await Rooms.create(newRoom);
   if (startingRoom.exits.length > 0) {
     for (let exit of startingRoom.exits) {
       graph[startingRoom.room_id][exit] = "?";
@@ -98,6 +115,12 @@ const traversal = async token => {
           if (graph[currentRoom][direction] === "?") {
             explored = false;
             const movedToRoom = roomRequest(token, direction);
+            const createMovedToRoom = {
+              room_id: movedToRoom.room_id,
+              title: movedToRoom.title,
+              description: movedToRoom.description
+            };
+            await Rooms.create(createMovedToRoom);
             const newRoomID = movedToRoom.room_id;
             graph[currentRoom][direction] = newRoomID;
             // Reset cooldown and starting time after making a move
@@ -163,6 +186,8 @@ const traversal = async token => {
       }
     }
   }
+  // All rooms visited, save the result to database
+  graphToDatabase(graph);
 };
 
 module.exports = traversal;
