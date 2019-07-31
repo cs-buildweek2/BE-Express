@@ -11,7 +11,7 @@ module.exports = {
   development: {
     client: "sqlite3",
     connection: {
-      filename: "./data/bookr.sqlite3"
+      filename: "./data/treasuremap.sqlite3"
     },
     useNullAsDefault: true,
     migrations: {
