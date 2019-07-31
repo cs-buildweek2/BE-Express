@@ -1,6 +1,6 @@
 const axios = require("axios");
-// const Rooms = require("../data/helpers/rooms-model.js");
-// const Exits = require("../data/helpers/exits-model.js");
+const Rooms = require("../data/helpers/rooms-model.js");
+const Exits = require("../data/helpers/exits-model.js");
 
 class Queue {
   constructor() {
@@ -115,26 +115,37 @@ const traversal = async token => {
           if (graph[currentRoom][direction] === "?") {
             explored = false;
             const movedToRoom = roomRequest(token, direction);
-            const createMovedToRoom = {
-              room_id: movedToRoom.room_id,
-              title: movedToRoom.title,
-              description: movedToRoom.description
-            };
-            await Rooms.create(createMovedToRoom);
             const newRoomID = movedToRoom.room_id;
             graph[currentRoom][direction] = newRoomID;
             // Reset cooldown and starting time after making a move
             cooldown = movedToRoom.cooldown;
             startingTime = new Date().getTime() / 1000;
-            graph[newRoomID] = {};
-            visited.add(newRoomID);
-            if (movedToRoom.exits.length > 0) {
+            if (!newRoomID in visited) {
+              // Only create the entry if this is the first time coming here
+              const createMovedToRoom = {
+                room_id: movedToRoom.room_id,
+                title: movedToRoom.title,
+                description: movedToRoom.description
+              };
+              await Rooms.create(createMovedToRoom);
+              graph[newRoomID] = {};
+              visited.add(newRoomID);
+              s.push(newRoomID);
               for (let exit of movedToRoom.exits) {
                 graph[newRoomID][exit] = "?";
-                s.push(newRoomID);
               }
-            } else {
-              backtracking = true;
+            }
+            else {
+              // This has been visited already. Check for unexplored rooms. If none exist, start backtracking
+              let allNeighborsVisited = true;
+              for (let exit of graph[newRoomID]) {
+                if (graph[newRoomID][exit] === "?") {
+                  allNeighborsVisited = false;
+                }
+              }
+              if (allNeighborsVisited) {
+                backtracking = true;
+              }
             }
             currentRoom = newRoomID;
             break;
