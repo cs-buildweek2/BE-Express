@@ -24,12 +24,14 @@ const initialization = async token => {
 };
 
 const traversal = token => {
+  const graph = {};
   const startingRoom = initialization(token);
   const newRoom = {
     room_id: startingRoom.room_id,
     title: startingRoom.title,
     description: startingRoom.description
   };
+  graph[startingRoom] = {};
   await Rooms.create(newRoom);
   if (startingRoom.exits.length > 0) {
       for (exit of exits) {
@@ -38,9 +40,17 @@ const traversal = token => {
               direction: exit
           }
           await Exits.create(newExit)
+          graph[startingRoom][exit] = "?"
       }
   }
-  // Traverse until you hit a dead-end
+  const totalRooms = 500;
+  const visited = new Set();
+  const s = [];
+  // will hold rooms here that have unexplored neighbors, for the purpose of backtracking
+  visited.add(startingRoom.room_id)
+  while (visited.size < totalRooms) {
+      return
+  }
 };
 
 module.exports = traversal;
