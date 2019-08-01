@@ -37,14 +37,36 @@ const inner_bfs = (graph, starting_vertex, destination) => {
   }
 };
 
-const graphToDatabase = graph => {
+const graphToDatabase = async graph => {
   for (let room in graph) {
     for (let direction in graph[room]) {
       let direction_id = graph[room][direction];
       const newExit = {
-        direction_id, direction, room_id: room
+        direction_id,
+        direction,
+        room_id: room
+      };
+      await Exits.create(newExit);
+    }
+  }
+};
+
+const checkDirections = (graph, currentRoom, nextRoom) => {
+  const opposites = {
+    n: "s",
+    s: "n",
+    w: "e",
+    e: "w"
+  };
+  for (let exit in graph[currentRoom]) {
+    if (graph[currentRoom][exit] === nextRoom) {
+      const opposite = opposites[exit];
+      if (opposite in graph[nextRoom]) {
+        graph[nextRoom][opposite] = currentRoom;
+        return true;
+      } else {
+        return false;
       }
-      await Exits.create(newExit)
     }
   }
 };
@@ -52,43 +74,62 @@ const graphToDatabase = graph => {
 const roomRequest = async (token, direction) => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
   const headers = {
-    Authorization: `Token ${token}`,
-    "Content-Type": "application/json"
+    headers: {
+      Authorization: `Token ${token}`,
+      "Content-Type": "application/json"
+    }
   };
-  const request = { direction };
-  const response = await axios.post(URL, request, headers);
-  return response;
+  try {
+    const request = { direction };
+    const response = await axios.post(URL, request, headers);
+    return response.data;
+  } catch (error) {
+    console.error(error, "<---roomRequest error");
+  }
 };
 
 const shorterRoomRequest = async (token, direction, nextRoom) => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/";
   const headers = {
-    Authorization: `Token ${token}`,
-    "Content-Type": "application/json"
+    headers: {
+      Authorization: `Token ${token}`,
+      "Content-Type": "application/json"
+    }
   };
-  const request = { direction, next_room_id: nextRoom.toString() };
-  const response = await axios.post(URL, request, headers);
-  return response;
+  try {
+    const request = { direction, next_room_id: nextRoom.toString() };
+    const response = await axios.post(URL, request, headers);
+    return response.data;
+  } catch (error) {
+    console.error(error, "<---shorter Room error");
+  }
 };
 
 const initialization = async token => {
   const URL = "https://lambda-treasure-hunt.herokuapp.com/api/adv/init/";
   const headers = {
-    Authorization: `Token ${token}`,
-    "Content-Type": "application/json"
+    headers: {
+      Authorization: `Token ${token}`,
+      "Content-Type": "application/json"
+    }
   };
-  const response = await axios.get(URL, headers);
-  return response;
+  try {
+    const response = await axios.get(URL, headers);
+    return response.data;
+  } catch (error) {
+    console.error(error, "<---initialize error");
+  }
 };
 
 const traversal = async token => {
   const graph = {};
-  const startingRoom = initialization(token);
+  const startingRoom = await initialization(token);
   graph[startingRoom.room_id] = {};
   const newRoom = {
     room_id: startingRoom.room_id,
     title: startingRoom.title,
-    description: startingRoom.description
+    description: startingRoom.description,
+    coordinates: startingRoom.coordinates
   };
   await Rooms.create(newRoom);
   if (startingRoom.exits.length > 0) {
@@ -109,6 +150,7 @@ const traversal = async token => {
   while (visited.size < totalRooms) {
     let currentTime = new Date().getTime() / 1000;
     if (currentTime - startingTime >= cooldown) {
+      console.log(graph);
       if (!backtracking) {
         let explored = true;
         for (let direction in graph[currentRoom]) {
@@ -125,7 +167,8 @@ const traversal = async token => {
               const createMovedToRoom = {
                 room_id: movedToRoom.room_id,
                 title: movedToRoom.title,
-                description: movedToRoom.description
+                description: movedToRoom.description,
+                coordinates: movedToRoom.coordinates
               };
               await Rooms.create(createMovedToRoom);
               graph[newRoomID] = {};
@@ -134,20 +177,20 @@ const traversal = async token => {
               for (let exit of movedToRoom.exits) {
                 graph[newRoomID][exit] = "?";
               }
-            }
-            else {
+              checkDirections(graph, currentRoom, newRoomID);
+              // Check if you can travel to the room you just came from. If you can, set that direction in the graph
+            } else {
               // This has been visited already. Check for unexplored rooms. If none exist, start backtracking
               let allNeighborsVisited = true;
-              for (let exit of graph[newRoomID]) {
+              for (let exit in graph[newRoomID]) {
                 if (graph[newRoomID][exit] === "?") {
                   allNeighborsVisited = false;
                 }
               }
               if (allNeighborsVisited) {
                 backtracking = true;
-              }
-              else {
-                s.push(newRoomID)
+              } else {
+                s.push(newRoomID);
               }
             }
             currentRoom = newRoomID;
@@ -205,86 +248,3 @@ const traversal = async token => {
 };
 
 module.exports = traversal;
-
-// Commenting out the version which adds new entries as it goes
-// const traversal = async token => {
-//   const graph = {};
-//   const startingRoom = initialization(token);
-//   // const newRoom = {
-//   //   room_id: startingRoom.room_id,
-//   //   title: startingRoom.title,
-//   //   description: startingRoom.description
-//   // };
-//   graph[startingRoom.room_id] = {};
-//   // await Rooms.create(newRoom);
-//   if (startingRoom.exits.length > 0) {
-//     for (let exit of startingRoom.exits) {
-//       // const newExit = {
-//       //   room_id: startingRoom.room_id,
-//       //   direction: exit
-//       // };
-//       // await Exits.create(newExit);
-//       graph[startingRoom.room_id][exit] = "?";
-//     }
-//   }
-//   const totalRooms = 500;
-//   const visited = new Set();
-//   const s = [];
-//   // will hold rooms here that have unexplored neighbors, for the purpose of backtracking
-//   let startingTime = new Date().getTime() / 1000;
-//   let cooldown = startingRoom.cooldown;
-//   visited.add(startingRoom.room_id);
-//   s.push(startingRoom.room_id);
-//   let currentRoom = startingRoom.room_id;
-//   let backtracking = false;
-//   while (visited.size < totalRooms) {
-//     let currentTime = new Date().getTime() / 1000;
-//     if (currentTime - startingTime >= cooldown) {
-//       let explored = true;
-//       for (let direction in graph[currentRoom]) {
-//         if (graph[currentRoom][direction] === "?") {
-//           explored = false;
-//           const movedToRoom = roomRequest(token, direction);
-//           const newRoomID = movedToRoom.room_id;
-//           // Reset cooldown and starting time after making a move
-//           cooldown = movedToRoom.cooldown;
-//           startingTime = new Date().getTime() / 1000;
-//           // const createMovedToRoom = {
-//           //   room_id: movedToRoom.room_id,
-//           //   title: movedToRoom.title,
-//           //   description: movedToRoom.description
-//           // };
-//           // await Rooms.create(createMovedToRoom);
-//           graph[newRoomID] = {};
-//           visited.add(newRoomID);
-//           // const previousExit = await Exits.findByRoom(currentRoom, direction);
-//           // const newPreviousExit = {
-//           //   direction_id: newRoomID
-//           // };
-//           // await Exits.update(newPreviousExit, previousExit.id);
-//           if (movedToRoom.exits.length > 0) {
-//             for (let exit of movedToRoom.exits) {
-//               // const newExit = {
-//               //   room_id: newRoomID,
-//               //   direction: exit
-//               // };
-//               // await Exits.create(newExit);
-//               // It will probably look cleaner to make all the database entries for the graph at once, once it is completely built
-//               graph[newRoomID][exit] = "?";
-//               s.push(newRoomID);
-//             }
-//           } else {
-//             backtracking = true;
-//           }
-//           break;
-//         }
-//       }
-
-//       if (explored) {
-//         backtracking = true;
-//       }
-//     }
-//   }
-// };
-
-// module.exports = traversal;
