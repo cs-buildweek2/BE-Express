@@ -167,7 +167,8 @@ const traversal = async token => {
               const createMovedToRoom = {
                 room_id: movedToRoom.room_id,
                 title: movedToRoom.title,
-                description: movedToRoom.description
+                description: movedToRoom.description,
+                coordinates: movedToRoom.coordinates
               };
               await Rooms.create(createMovedToRoom);
               graph[newRoomID] = {};
@@ -181,7 +182,7 @@ const traversal = async token => {
             } else {
               // This has been visited already. Check for unexplored rooms. If none exist, start backtracking
               let allNeighborsVisited = true;
-              for (let exit of graph[newRoomID]) {
+              for (let exit in graph[newRoomID]) {
                 if (graph[newRoomID][exit] === "?") {
                   allNeighborsVisited = false;
                 }
